@@ -1,0 +1,16 @@
+{
+  "name": "google-trends-api",
+  "version": "1.0.0",
+  "description": "Google Trends API server",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "express": "^4.17.1",
+    "google-trends-api": "^2.0.0"
+  },
+  "engines": {
+    "node": "16.x"
+  }
+}
