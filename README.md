@@ -1,239 +1,239 @@
-# render-rest-trend
+To deploy the project on Render as a REST API, we'll follow these steps:
 
-This project is a REST API that fetches data from Google Trends using the `google-trends-api` client. It provides several endpoints to get information about trending topics, related queries, interest over time, and more.
+### Steps to Convert the Project to Render Deployable
 
-The API is built using Deno and can be deployed to platforms such as Render.
+1. **Refactor the project into a single REST API**:
+   We'll combine both the Deno and Node.js parts into one backend API. Since Render supports Node.js natively, we'll convert the Deno part into Node.js code and deploy it as a single Node.js service.
 
-## Features
+2. **Simplify the structure**:
+   We will focus on the Node.js part (backend API) and make sure everything is set up for deployment.
 
-- Fetch **interest over time** for a single or multiple keywords.
-- Get **autocomplete** suggestions for search terms.
-- Retrieve **daily trends** for a specific region.
-- Explore **related queries** and **related topics** based on keywords.
-- **Batch processing** for multiple keywords to fetch trends data.
+### Refactored Project Structure:
 
-## Installation
-
-### Prerequisites
-
-Before you can run this API, make sure you have:
-
-- Deno installed. If not, you can install it from [deno.land](https://deno.land/).
-- Basic understanding of how to work with REST APIs and JSON.
-
-### Clone the Repository
-
-```bash
-git clone https://github.com/your-username/google-trends-api-deno.git
-cd google-trends-api-deno
+```
+/google-trends-api-render
+│
+├── /src
+│   ├── /lib
+│   │   └── googleTrendsClient.js   # Google Trends Client (handles API requests)
+│   ├── /routes
+│   │   └── trendsRoutes.js         # API Routes (autocomplete, interest over time, etc.)
+│   ├── server.js                   # Main entry point (express server)
+│   └── package.json                # Dependencies and scripts
+└── README.md                       # Setup instructions for Render deployment
 ```
 
-### Install Dependencies
+### 1. **`src/lib/googleTrendsClient.js`** (Handles Google Trends API interactions):
 
-Deno doesn’t require a package manager like npm, but you can import dependencies directly. In this project, we're using the `google-trends-api` client.
+This file will remain the same as in the previous setup.
 
-For local development, you can use:
+```javascript
+import GoogleTrends from 'google-trends-api';
 
-```bash
-deno run --allow-net --allow-read server.ts
-```
-
-This will start the server with necessary permissions.
-
-### Start the Server
-
-To run the server locally:
-
-```bash
-deno run --allow-net --allow-read src/server.ts
-```
-
-This will start the API server on the default port `8000`. You can change the port in `src/server.ts`.
-
-## API Endpoints
-
-### 1. Autocomplete (GET `/api/v1/autocomplete`)
-
-**Description**: Fetch autocomplete suggestions for a given keyword.
-
-**Query Parameters**:
-- `keyword`: The search term to fetch autocomplete data for (required).
-
-**Example Request**:
-
-```bash
-curl "http://localhost:8000/api/v1/autocomplete?keyword=python"
-```
-
-**Response**:
-```json
-{
-  "status": "OK",
-  "data": { ... }
-}
-```
-
----
-
-### 2. Interest Over Time (GET `/api/v1/interest-over-time`)
-
-**Description**: Fetch the interest over time data for a given keyword.
-
-**Query Parameters**:
-- `keyword`: The keyword to fetch interest over time data for (required).
-- `startTime`: The start date in ISO format (optional, defaults to 1 month ago).
-
-**Example Request**:
-
-```bash
-curl "http://localhost:8000/api/v1/interest-over-time?keyword=python&startTime=2023-01-01"
-```
-
-**Response**:
-```json
-{
-  "keyword": "python",
-  "trendData": { ... }
-}
-```
-
----
-
-### 3. Daily Trends (GET `/api/v1/daily-trends`)
-
-**Description**: Fetch daily trending topics for a specific region.
-
-**Query Parameters**:
-- `geo`: The region code (default is `US`).
-
-**Example Request**:
-
-```bash
-curl "http://localhost:8000/api/v1/daily-trends?geo=US"
-```
-
-**Response**:
-```json
-{
-  "status": "OK",
-  "data": { ... }
-}
-```
-
----
-
-### 4. Related Queries (GET `/api/v1/related-queries`)
-
-**Description**: Fetch related queries for a given keyword.
-
-**Query Parameters**:
-- `keyword`: The keyword to fetch related queries for (required).
-
-**Example Request**:
-
-```bash
-curl "http://localhost:8000/api/v1/related-queries?keyword=python"
-```
-
-**Response**:
-```json
-{
-  "status": "OK",
-  "data": { ... }
-}
-```
-
----
-
-### 5. Batch Trends (POST `/api/v1/batch-trends`)
-
-**Description**: Fetch trends for multiple keywords in a single request.
-
-**Request Body** (JSON):
-```json
-{
-  "keywords": ["python", "javascript", "react"],
-  "startTime": "2023-01-01"
-}
-```
-
-**Response**:
-```json
-{
-  "results": [
-    {
-      "keyword": "python",
-      "trendData": { ... }
-    },
-    {
-      "keyword": "javascript",
-      "trendData": { ... }
-    },
-    {
-      "keyword": "react",
-      "trendData": { ... }
+const googleTrendsClient = {
+  async fetchAutoComplete(term) {
+    try {
+      const data = await GoogleTrends.autoComplete({ keyword: term });
+      return JSON.parse(data);
+    } catch (error) {
+      console.error('Error fetching autocomplete data:', error);
+      throw new Error('Error fetching autocomplete data');
     }
-  ]
+  },
+
+  async fetchInterestOverTime(keyword, startTime = new Date(new Date().setMonth(new Date().getMonth() - 1))) {
+    try {
+      const data = await GoogleTrends.interestOverTime({ keyword, startTime });
+      return JSON.parse(data);
+    } catch (error) {
+      console.error('Error fetching interest over time:', error);
+      throw new Error('Error fetching interest over time');
+    }
+  },
+
+  async fetchDailyTrends(geo = 'US') {
+    try {
+      const today = new Date();
+      const startDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1);
+      const data = await GoogleTrends.dailyTrends({ trendDate: startDate, geo });
+      return JSON.parse(data);
+    } catch (error) {
+      console.error('Error fetching daily trends:', error);
+      throw new Error('Error fetching daily trends');
+    }
+  },
+
+  async fetchRelatedQueries(keyword) {
+    try {
+      const data = await GoogleTrends.relatedQueries({ keyword });
+      return JSON.parse(data);
+    } catch (error) {
+      console.error('Error fetching related queries:', error);
+      throw new Error('Error fetching related queries');
+    }
+  }
+};
+
+export default googleTrendsClient;
+```
+
+### 2. **`src/routes/trendsRoutes.js`** (API Routes):
+
+```javascript
+import express from 'express';
+import googleTrendsClient from '../lib/googleTrendsClient';
+
+const router = express.Router();
+
+// Autocomplete endpoint
+router.get('/autocomplete', async (req, res) => {
+  const { keyword } = req.query;
+  if (!keyword) {
+    return res.status(400).json({ error: 'Please provide a keyword' });
+  }
+  try {
+    const data = await googleTrendsClient.fetchAutoComplete(keyword);
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Interest Over Time endpoint
+router.get('/interest-over-time', async (req, res) => {
+  const { keyword, startTime } = req.query;
+  if (!keyword) {
+    return res.status(400).json({ error: 'Please provide a keyword' });
+  }
+  try {
+    const data = await googleTrendsClient.fetchInterestOverTime(keyword, new Date(startTime));
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Daily Trends endpoint
+router.get('/daily-trends', async (req, res) => {
+  const { geo } = req.query;
+  try {
+    const data = await googleTrendsClient.fetchDailyTrends(geo);
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Related Queries endpoint
+router.get('/related-queries', async (req, res) => {
+  const { keyword } = req.query;
+  if (!keyword) {
+    return res.status(400).json({ error: 'Please provide a keyword' });
+  }
+  try {
+    const data = await googleTrendsClient.fetchRelatedQueries(keyword);
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+export default router;
+```
+
+### 3. **`src/server.js`** (Main Entry Point):
+
+```javascript
+import express from 'express';
+import trendsRoutes from './routes/trendsRoutes';
+
+const app = express();
+
+// Middleware for JSON parsing
+app.use(express.json());
+
+// Routes
+app.use('/api/v1', trendsRoutes);
+
+// Handle 404 errors
+app.use((req, res) => {
+  res.status(404).json({ error: 'Not Found' });
+});
+
+// Start the server
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
+```
+
+### 4. **`package.json`** (Dependencies and Scripts):
+
+```json
+{
+  "name": "google-trends-api",
+  "version": "1.0.0",
+  "description": "Google Trends API server",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "express": "^4.17.1",
+    "google-trends-api": "^2.0.0"
+  },
+  "engines": {
+    "node": "16.x"
+  }
 }
 ```
 
----
+### 5. **`README.md`** (Deployment Instructions):
 
-## Project Structure
+```markdown
+# Google Trends API
 
-Here’s a brief overview of the project structure:
+This is a simple REST API that provides Google Trends data using the `google-trends-api` package.
 
-```
-google-trends-api-deno/
-│
-├── src/
-│   ├── lib/
-│   │   └── googleTrendsClient.js    # The Google Trends client functions
-│   ├── routes/
-│   │   └── trendsRoutes.js          # The API routes for handling Google Trends requests
-│   ├── server.ts                    # The main server file to set up and start the API
-│
-└── README.md                        # Project documentation
-```
+## Endpoints:
 
-- **googleTrendsClient.js**: Contains the functions for interacting with the `google-trends-api` client, including fetching data for autocomplete, daily trends, interest over time, etc.
-- **trendsRoutes.js**: Defines the API routes such as `/autocomplete`, `/interest-over-time`, and `/batch-trends`.
-- **server.ts**: Main entry point for starting the API server, setting up routes, and handling requests.
+- **`GET /api/v1/autocomplete?keyword={keyword}`**: Fetches autocomplete data for a given keyword.
+- **`GET /api/v1/interest-over-time?keyword={keyword}&startTime={startTime}`**: Fetches interest over time data for a given keyword.
+- **`GET /api/v1/daily-trends?geo={geo}`**: Fetches daily trends for a specific region (e.g., "US").
+- **`GET /api/v1/related-queries?keyword={keyword}`**: Fetches related queries for a given keyword.
 
-## Permissions
+## Running Locally:
 
-When running locally, Deno requires the following permissions:
-- `--allow-net`: To allow making network requests.
-- `--allow-read`: To read from the filesystem (optional based on project needs).
+1. Clone this repository.
+2. Run `npm install` to install dependencies.
+3. Run `npm start` to start the server.
 
-## Deploying to Render
+The API will be available at `http://localhost:3000`.
 
-You can deploy this project to Render by following these steps:
+## Deploying to Render:
 
-1. Push your project to a GitHub repository.
-2. Create a new web service on Render.
-3. Connect your GitHub repository and configure the build and run commands.
+1. Create a new Node.js web service on [Render](https://render.com/).
+2. Connect your GitHub repository to Render.
+3. Add the necessary environment variables (if any).
+4. Deploy and access your deployed API on Render.
 
-For example:
-- **Build Command**: `deno run --allow-net --allow-read src/server.ts`
-- **Start Command**: `deno run --allow-net --allow-read src/server.ts`
+## License:
 
-Render will automatically deploy and run your API.
-
-## Testing
-
-You can test the API using tools like Postman or `curl`. Here’s an example `curl` request to fetch trends for a list of keywords:
-
-```bash
-curl -X POST http://localhost:8000/api/v1/batch-trends \
--H "Content-Type: application/json" \
--d '{"keywords": ["python", "javascript", "react"], "startTime": "2023-01-01"}'
+This project is licensed under the MIT License.
 ```
 
-## Contributions
+### 6. **Deploy to Render**:
 
-Feel free to fork this project, make improvements, and submit pull requests. Issues and suggestions are welcome!
+- Create a GitHub repository for your project.
+- Push your project to the GitHub repository.
+- Go to [Render](https://render.com/), sign in, and create a new Web Service.
+- Connect your GitHub repository and select the branch you want to deploy.
+- Render will automatically install the dependencies and start the application. You should be able to access your API endpoint in a few minutes.
 
-## License
+### Summary of the Process:
 
-MIT License.
+1. **Backend Setup**: The backend uses `express` and `google-trends-api` to provide data from Google Trends.
+2. **API Endpoints**: We've created multiple REST API endpoints to fetch autocomplete, interest over time, daily trends, and related queries.
+3. **Deployment**: The project can be easily deployed to Render as a Node.js web service by pushing it to a GitHub repository.
+
+Now, your API will be accessible, and you can fetch Google Trends data by making HTTP requests to the endpoints defined in your Express app.
