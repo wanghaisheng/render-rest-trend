@@ -56,4 +56,29 @@ router.get('/related-queries', async (req, res) => {
   }
 });
 
+// New endpoint for Keyword List (batch processing)
+router.post('/batch-trends', async (req, res) => {
+  const { keywords, startTime } = req.body;
+
+  // Ensure keywords is an array
+  if (!Array.isArray(keywords) || keywords.length === 0) {
+    return res.status(400).json({ error: 'Please provide a non-empty list of keywords' });
+  }
+
+  try {
+    // Fetch trends for each keyword
+    const trendsResults = [];
+    for (let i = 0; i < keywords.length; i++) {
+      const keyword = keywords[i];
+      const trendData = await googleTrendsClient.fetchInterestOverTime(keyword, new Date(startTime));
+      trendsResults.push({ keyword, trendData });
+    }
+
+    res.json({ results: trendsResults });
+  } catch (error) {
+    console.error('Error fetching batch trends data:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;
